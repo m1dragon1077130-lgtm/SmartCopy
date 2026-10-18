@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>داشبورد - SmartCopy</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Tahoma, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 20px; }
+    .container { max-width: 800px; margin: auto; }
+    .header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #1e293b; border-radius: 12px; margin-bottom: 20px; }
+    .header h1 { font-size: 24px; color: #8b5cf6; margin: 0; }
+    .card { background: #1e293b; padding: 25px; border-radius: 12px; margin-bottom: 20px; }
+    .card h2 { font-size: 18px; margin-bottom: 15px; color: #94a3b8; }
+    .btn { padding: 12px 24px; background: #8b5cf6; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%; transition: 0.2s; }
+    .btn:hover:not(:disabled) { background: #7c3aed; }
+    .btn:disabled { background: #475569; cursor: not-allowed; opacity: 0.6; }
+    .btn-danger { background: #dc2626; }
+    .btn-danger:hover:not(:disabled) { background: #b91c1c; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 6px; font-size: 14px; }
+    input { width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 8px; font-size: 15px; }
+    input:focus { outline: none; border-color: #8b5cf6; }
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #22c55e; color: #fff; padding: 15px 25px; border-radius: 8px; font-weight: bold; opacity: 0; transition: 0.3s; z-index: 9999; }
+    .toast.show { opacity: 1; }
+    .toast.error { background: #ef4444; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>⚡ SmartCopy</h1>
+      <div class="user-info" style="display:flex; align-items:center; gap:10px;">
+        <span id="userName">...</span>
+        <button class="btn btn-danger" style="width:auto; padding: 8px 16px;" onclick="logout()">خروج</button>
+      </div>
+    </div>
+    
+    <div id="content">
+      <div class="card">⏳ در حال بارگذاری...</div>
+    </div>
+  </div>
+  <div id="toast" class="toast"></div>
+
+  <script>
+    let currentUser = null;
+
+    async function loadProfile() {
+      try {
+        const resp = await fetch('/api/user/profile');
+        if (resp.status === 401) { window.location.href = '/login.html'; return; }
+        const data = await resp.json();
+        if (!data.ok) {
+          document.getElementById('content').innerHTML = `<div class="card" style="color:#ef4444">❌ خطا: ${data.error}</div>`;
+          return;
+        }
+        currentUser = data.user;
+        renderDashboard();
+      } catch (err) {
+        document.getElementById('content').innerHTML = `<div class="card" style="color:#ef4444">❌ خطا در اتصال</div>`;
+      }
+    }
+
+    function renderDashboard() {
+      const u = currentUser;
+      document.getElementById('userName').textContent = u.username || 'کاربر';
+      
+      let content = '';
+      
+      // بخش اتصال به کپی تریدینگ
+      content += `
+        <div class="card" style="border: 2px solid #8b5cf6; box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);">
+          <h2>🔄 اتصال به سیستم کپی‌تریدینگ</h2>
+          <p style="color: #94a3b8; font-size: 14px; margin-bottom: 20px; line-height: 1.6;">
+            با وارد کردن API Key صرافی خود، اجازه دهید سیستم SmartCopy معاملاتِ مدیر را به صورت خودکار روی حساب شما اجرا کند.
+          </p>
+          <div class="form-group">
+            <label>API Key</label>
+            <input type="text" id="copyApiKey" placeholder="کلید API صرافی">
+          </div>
+          <div class="form-group">
+            <label>API Secret</label>
+            <input type="password" id="copyApiSecret" placeholder="API Secret صرافی">
+          </div>
+          <button class="btn" id="saveKeysBtn" onclick="saveCopyKeys()">💾 فعال‌سازی کپی‌تریدینگ</button>
+          <p style="font-size: 12px; color: #64748b; margin-top: 15px; text-align: center;">
+            ⚠️ کلیدهای شما به صورت امن در سرور ذخیره می‌شوند. فقط دسترسی (Readonly + Futures) کافی است.
+          </p>
+        </div>
+      `;
+      
+      document.getElementById('content').innerHTML = content;
+    }
+
+    async function saveCopyKeys() {
+      const apiKey = document.getElementById('copyApiKey').value.trim();
+      const apiSecret = document.getElementById('copyApiSecret').value.trim();
+      
+      if (!apiKey || !apiSecret) {
+        showToast('❌ API Key و Secret الزامی هستن', true);
+        return;
+      }
+      
+      const btn = document.getElementById('saveKeysBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ در حال اتصال به صرافی...';
+      
+      try {
+        const resp = await fetch('/api/user/save-keys', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ api_key: apiKey, api_secret: apiSecret }),
+        });
+        
+        const data = await resp.json();
+        
+        if (data.ok) {
+          showToast('✅ کلیدها با موفقیت ثبت شدند!');
+          document.getElementById('copyApiKey').value = '';
+          document.getElementById('copyApiSecret').value = '';
+        } else {
+          showToast('❌ ' + (data.error || 'خطا در ذخیره'), true);
+        }
+      } catch (err) {
+        showToast('❌ خطا در ارتباط با سرور', true);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '💾 فعال‌سازی کپی‌تریدینگ';
+      }
+    }
+
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.className = 'toast show' + (isError ? ' error' : '');
+      setTimeout(() => { toast.className = 'toast'; }, 5000);
+    }
+
+    function logout() {
+      document.cookie = 'session=; Max-Age=0; Path=/';
+      window.location.href = '/login.html';
+    }
+
+    loadProfile();
+  </script>
+</body>
+</html>
