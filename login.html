@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ورود - SmartCopy</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Tahoma, sans-serif; background: #0f172a; color: #e2e8f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .card { background: #1e293b; padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    h1 { color: #8b5cf6; margin-bottom: 20px; font-size: 28px; }
+    p { color: #94a3b8; margin-bottom: 30px; font-size: 14px; line-height: 1.6; }
+    .btn { padding: 15px 20px; background: #8b5cf6; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; }
+    .btn:hover { background: #7c3aed; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>⚡ SmartCopy</h1>
+    <p>برای ورود به داشبورد و فعال‌سازی کپی‌تریدینگ، با حساب گیت‌هاب خود وارد شوید.</p>
+    <button class="btn" onclick="loginWithGithub()">ورود با GitHub</button>
+  </div>
+
+  <script>
+    function loginWithGithub() {
+      // ⚠️ این آدرس رو باید با Client ID خودت عوض کنی
+      const clientId = "YOUR_GITHUB_CLIENT_ID"; 
+      const redirectUri = window.location.origin + "/api/auth/callback";
+      window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=read:user`;
+    }
+  </script>
+</body>
+</html>
