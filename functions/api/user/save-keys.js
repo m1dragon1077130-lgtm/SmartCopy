@@ -17,8 +17,9 @@ export async function onRequest(context) {
   if (!api_key || !api_secret) return json({ error: 'API Key و Secret الزامی هستن' }, 400);
   
   try {
-    const dbUrl = env.DB_URL;
-    const dbKey = env.DB_KEY;
+    // 👇 دقیقاً با همون اسم‌هایی که توی کلودفلر ساختی
+    const dbUrl = env.SUPABASE_URL;
+    const dbKey = env.SUPABASE_SERVICE_KEY;
     
     const checkUrl = `${dbUrl}/rest/v1/copy_traders?user_id=eq.${sessionData.github_id}`;
     const checkRes = await fetch(checkUrl, {
