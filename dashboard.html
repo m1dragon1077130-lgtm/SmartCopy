@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-  <html lang="fa" dir="rtl">
+<html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,6 +26,8 @@
     .btn-success:hover:not(:disabled) { background: #16a34a; }
     .btn-danger { background: #ef4444; }
     .btn-danger:hover:not(:disabled) { background: #dc2626; }
+    .btn-warning { background: #f59e0b; color: #fff; }
+    .btn-warning:hover:not(:disabled) { background: #d97706; }
     .form-group { margin-bottom: 15px; }
     label { display: block; margin-bottom: 6px; font-size: 14px; }
     input { width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 8px; font-size: 15px; }
@@ -46,7 +48,7 @@
       <div class="user-info">
         <span id="userName">...</span>
         <img id="userAvatar" class="avatar" src="" alt="">
-        <button class="btn btn-danger" style="width: auto; padding: 8px 16px;" onclick="logout()">خروج</button>
+        <button class="btn btn-danger" style="width: auto; padding: 8px 16px; margin:0;" onclick="logout()">خروج</button>
       </div>
     </div>
 
@@ -137,8 +139,10 @@
             <p style="color: #94a3b8; font-size: 14px; margin-bottom: 15px;">
               با زدن این دکمه‌ها، دستور کپی معاملات برای همه کاربران فعال صادر می‌شود.
             </p>
+            
             <button class="btn btn-success" onclick="triggerCopy('open')">🟢 کپی و باز کردن معاملات</button>
             <button class="btn btn-danger" style="margin-top: 10px;" onclick="triggerCopy('close')">🔴 کپی و بستن معاملات</button>
+            <button class="btn btn-warning" style="margin-top: 10px;" onclick="triggerCopy('fix')">🛠 تعمیر حد ضرر و سود (TP/SL)</button>
           </div>
         `;
       }
@@ -172,7 +176,7 @@
           showToast('✅ کلیدها با موفقیت ثبت شدند!');
           document.getElementById('copyApiKey').value = '';
           document.getElementById('copyApiSecret').value = '';
-          setTimeout(() => window.location.reload(), 1500); // رفرش برای نمایش دکمه‌های کنترل
+          setTimeout(() => window.location.reload(), 1500);
         } else {
           showToast('❌ ' + (data.error || 'خطا در ذخیره'), true);
         }
