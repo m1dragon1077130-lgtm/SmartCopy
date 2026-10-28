@@ -15,11 +15,13 @@ export async function onRequest(context) {
   
   // 🌟 مشخص کردن فایل ورک‌فلو بر اساس دکمه زده شده
   let workflowFile = null;
-if (action === 'open') workflowFile = 'copy_open.yml';
-else if (action === 'close') workflowFile = 'copy_close.yml';
-else if (action === 'update') workflowFile = 'update_tpsl.yml'; // 👈 دکمه جدید
-
-if (!workflowFile) return json({ error: 'Invalid action' }, 400);
+  if (action === 'open') workflowFile = 'copy_open.yml';
+  else if (action === 'close') workflowFile = 'copy_close.yml';
+  else if (action === 'update') workflowFile = 'update_tpsl.yml';
+  else if (action === 'stats') workflowFile = 'update_stats.yml'; // 👈 این خط اضافه شد
+  
+  if (!workflowFile) return json({ error: 'Invalid action' }, 400);
+  
   try {
     const ghRes = await fetch(`https://api.github.com/repos/m1dragon1077130-lgtm/copy-trading-bot/actions/workflows/${workflowFile}/dispatches`, {
       method: 'POST',
