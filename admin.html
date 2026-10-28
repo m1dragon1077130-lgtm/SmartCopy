@@ -7,21 +7,22 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: Tahoma, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 20px; }
-    .container { max-width: 1000px; margin: auto; }
+    .container { max-width: 1200px; margin: auto; }
     .header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #1e293b; border-radius: 12px; margin-bottom: 20px; }
     .header h1 { font-size: 24px; color: #ef4444; margin: 0; }
     .card { background: #1e293b; padding: 25px; border-radius: 12px; margin-bottom: 20px; }
     .btn { padding: 10px 20px; background: #3b82f6; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; }
-    .btn:hover { background: #2563eb; }
+    .btn:hover:not(:disabled) { background: #2563eb; }
+    .btn:disabled { background: #475569; cursor: not-allowed; }
     .btn-danger { background: #ef4444; }
-    .btn-danger:hover { background: #dc2626; }
     table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
-    th, td { padding: 12px; text-align: right; border-bottom: 1px solid #334155; }
+    th, td { padding: 12px; text-align: center; border-bottom: 1px solid #334155; }
     th { background: #0f172a; color: #94a3b8; }
-    .status { padding: 4px 10px; border-radius: 20px; font-size: 12px; }
-    .status.active { background: #22c55e; color: #fff; }
-    .status.inactive { background: #ef4444; color: #fff; }
-    .loading { text-align: center; padding: 40px; }
+    .profit { color: #22c55e; font-weight: bold; }
+    .loss { color: #ef4444; font-weight: bold; }
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; }
+    .badge.yes { background: #22c55e; color: #fff; }
+    .badge.no { background: #ef4444; color: #fff; }
   </style>
 </head>
 <body>
@@ -33,12 +34,12 @@
     
     <div class="card">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <h2>👥 لیست کاربران کپی‌تریدینگ</h2>
-        <button class="btn" onclick="loadUsers()">🔄 بروزرسانی لیست</button>
+        <h2>📊 وضعیت کاربران</h2>
+        <button class="btn" id="updateBtn" onclick="triggerStatsUpdate()">🔄 درخواست بروزرسانی از صرافی</button>
       </div>
       
       <div id="usersTable">
-        <div class="loading">⏳ در حال بارگذاری کاربران...</div>
+        <div style="text-align: center;">⏳ در حال بارگذاری...</div>
       </div>
     </div>
   </div>
@@ -46,7 +47,6 @@
   <script>
     async function loadUsers() {
       const tableDiv = document.getElementById('usersTable');
-      tableDiv.innerHTML = '<div class="loading">⏳ در حال بارگذاری...</div>';
       
       try {
         const resp = await fetch('/api/admin_users');
@@ -57,8 +57,8 @@
           return;
         }
         
-        if (data.users.length === 0) {
-          tableDiv.innerHTML = `<div style="text-align: center; color: #94a3b8;">هیچ کاربری ثبت‌نام نکرده است.</div>`;
+        if (data.stats.length === 0) {
+          tableDiv.innerHTML = `<div style="text-align: center; color: #94a3b8;">هنوز اطلاعاتی ثبت نشده. روی دکمه بالا بزنید.</div>`;
           return;
         }
         
@@ -66,24 +66,30 @@
           <table>
             <thead>
               <tr>
-                <th>آیدی دیتابیس</th>
-                <th>User ID</th>
-                <th>API Key</th>
-                <th>وضعیت</th>
-                <th>تاریخ ثبت</th>
+                <th>کاربر</th>
+                <th>موجودی (USDT)</th>
+                <th>تعداد معامله باز</th>
+                <th>سود/ضرر شناور</th>
+                <th>TP/SL فعال؟</th>
+                <th>آخرین بروزرسانی</th>
               </tr>
             </thead>
             <tbody>
         `;
         
-        for (const u of data.users) {
+        for (const s of data.stats) {
+          const pnlClass = s.total_unrealized_pnl >= 0 ? 'profit' : 'loss';
+          const pnlSign = s.total_unrealized_pnl >= 0 ? '+' : '';
+          const tpslBadge = s.has_tpsl ? '<span class="badge yes">✅ بله</span>' : '<span class="badge no">❌ خیر</span>';
+          
           html += `
             <tr>
-              <td>${u.id ? u.id.slice(0, 8) + '...' : '---'}</td>
-              <td>${u.user_id || '---'}</td>
-              <td>${u.api_key ? u.api_key.slice(0, 10) + '...' : '---'}</td>
-              <td><span class="status ${u.is_active ? 'active' : 'inactive'}">${u.is_active ? 'فعال' : 'غیرفعال'}</span></td>
-              <td>${new Date(u.created_at).toLocaleDateString('fa')}</td>
+              <td>${s.api_key ? s.api_key.slice(0, 8) + '...' : '---'}</td>
+              <td>${parseFloat(s.balance).toFixed(2)}</td>
+              <td>${s.open_positions_count}</td>
+              <td class="${pnlClass}">${pnlSign}${parseFloat(s.total_unrealized_pnl).toFixed(2)}</td>
+              <td>${tpslBadge}</td>
+              <td>${new Date(s.updated_at).toLocaleTimeString('fa')}</td>
             </tr>
           `;
         }
@@ -94,6 +100,38 @@
       } catch (err) {
         tableDiv.innerHTML = `<div style="color: #ef4444; text-align: center;">❌ خطا در ارتباط با سرور</div>`;
       }
+    }
+    
+    async function triggerStatsUpdate() {
+        const btn = document.getElementById('updateBtn');
+        btn.disabled = true;
+        btn.textContent = '⏳ در حال ارسال درخواست...';
+        
+        try {
+            const resp = await fetch('/api/trigger', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'stats' })
+            });
+            const data = await resp.json();
+            
+            if (data.ok) {
+                btn.textContent = '⏳ در حال بروزرسانی (۱۵ ثانیه)...';
+                setTimeout(() => {
+                    loadUsers();
+                    btn.disabled = false;
+                    btn.textContent = '🔄 درخواست بروزرسانی از صرافی';
+                }, 15000);
+            } else {
+                alert('خطا: ' + data.error);
+                btn.disabled = false;
+                btn.textContent = '🔄 درخواست بروزرسانی از صرافی';
+            }
+        } catch (err) {
+            alert('خطا در ارتباط');
+            btn.disabled = false;
+            btn.textContent = '🔄 درخواست بروزرسانی از صرافی';
+        }
     }
     
     function logout() {
